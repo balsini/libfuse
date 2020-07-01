@@ -71,6 +71,7 @@ struct fuse_file_info {
 	/** Can be filled in by open, to indicate that the file is not
 	    seekable. */
 	unsigned int nonseekable : 1;
+	unsigned int passthrough : 1;
 
 	/* Indicates that flock locks for this file should be
 	   released.  If set, lock_owner shall contain a valid value.
@@ -91,6 +92,9 @@ struct fuse_file_info {
 	 * open, and opendir().  Available in most other file operations on the
 	 * same file handle. */
 	uint64_t fh;
+
+	/** File id to the opened file from the lower file system. */
+	int32_t fd;
 
 	/** Lock owner id.  Available in locking operations and flush */
 	uint64_t lock_owner;
@@ -381,6 +385,7 @@ struct fuse_loop_config {
  */
 #define FUSE_CAP_EXPLICIT_INVAL_DATA    (1 << 25)
 
+#define FUSE_CAP_PASSTHROUGH            (1 << 30)
 /**
  * Ioctl flags
  *

@@ -395,6 +395,10 @@ static void fill_open(struct fuse_open_out *arg,
 		arg->open_flags |= FOPEN_CACHE_DIR;
 	if (f->nonseekable)
 		arg->open_flags |= FOPEN_NONSEEKABLE;
+	if (f->passthrough) {
+		arg->open_flags |= FOPEN_PASSTHROUGH;
+		arg->fd = f->fd;
+	}
 }
 
 int fuse_reply_entry(fuse_req_t req, const struct fuse_entry_param *e)
@@ -1972,6 +1976,12 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 				bufsize = max_bufsize;
 			}
 		}
+		if (arg->flags & FUSE_PASSTHROUGH) {
+			se->conn.capable |= FUSE_PASSTHROUGH;
+			fuse_log(FUSE_LOG_ERR, "Enabling FUSE_PASSTHROUGH capability\n");
+		} else {
+			fuse_log(FUSE_LOG_ERR, "FUSE_PASSTHROUGH capability unavailable\n");
+		}
 	} else {
 		se->conn.max_readahead = 0;
 	}
@@ -2086,6 +2096,8 @@ static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		outarg.flags |= FUSE_POSIX_ACL;
 	if (se->conn.want & FUSE_CAP_EXPLICIT_INVAL_DATA)
 		outarg.flags |= FUSE_EXPLICIT_INVAL_DATA;
+	if (se->conn.want & FUSE_CAP_PASSTHROUGH)
+		outarg.flags |= FUSE_PASSTHROUGH;
 	outarg.max_readahead = se->conn.max_readahead;
 	outarg.max_write = se->conn.max_write;
 	if (se->conn.proto_minor >= 13) {
