@@ -152,6 +152,7 @@ struct Fs {
     dev_t src_dev;
     bool nosplice;
     bool nocache;
+    bool passthrough;
 };
 static Fs fs{};
 
@@ -199,6 +200,8 @@ static void sfs_init(void *userdata, fuse_conn_info *conn) {
         conn->want |= FUSE_CAP_SPLICE_WRITE;
     if (conn->capable & FUSE_CAP_SPLICE_READ && !fs.nosplice)
         conn->want |= FUSE_CAP_SPLICE_READ;
+    if (fs.passthrough && conn->capable & FUSE_CAP_PASSTHROUGH)
+        conn->want |= FUSE_CAP_PASSTHROUGH;
 }
 
 
@@ -764,8 +767,13 @@ static void sfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
         if (err == ENFILE || err == EMFILE)
             cerr << "ERROR: Reached maximum number of file descriptors." << endl;
         fuse_reply_err(req, err);
-    } else
+    } else {
+        if (fs.passthrough) {
+            fi->fd = fd;
+            fi->passthrough = true;
+        }
         fuse_reply_create(req, &e, fi);
+    }
 }
 
 
@@ -816,6 +824,10 @@ static void sfs_open(fuse_req_t req, fuse_ino_t ino, fuse_file_info *fi) {
 
     fi->keep_cache = (fs.timeout != 0);
     fi->fh = fd;
+    if (fs.passthrough) {
+        fi->fd = fd;
+        fi->passthrough = true;
+    }
     fuse_reply_open(req, fi);
 }
 
@@ -1103,6 +1115,7 @@ static cxxopts::ParseResult parse_options(int argc, char **argv) {
         ("help", "Print help")
         ("nocache", "Disable all caching")
         ("nosplice", "Do not use splice(2) to transfer data")
+        ("nopassthrough", "Do not use pass-through mode for read/write")
         ("single", "Run single-threaded");
 
     // FIXME: Find a better way to limit the try clause to just
@@ -1127,6 +1140,7 @@ static cxxopts::ParseResult parse_options(int argc, char **argv) {
     fs.debug = options.count("debug") != 0;
     fs.nosplice = options.count("nosplice") != 0;
     fs.source = std::string {realpath(argv[1], NULL)};
+    fs.passthrough = options.count("nopassthrough") == 0;
 
     return options;
 }
