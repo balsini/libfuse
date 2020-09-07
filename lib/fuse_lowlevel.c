@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
 
 #ifndef F_LINUX_SPECIFIC_BASE
 #define F_LINUX_SPECIFIC_BASE       1024
@@ -451,6 +452,23 @@ int fuse_reply_attr(fuse_req_t req, const struct stat *attr,
 int fuse_reply_readlink(fuse_req_t req, const char *linkname)
 {
 	return send_reply_ok(req, linkname, strlen(linkname));
+}
+
+int fuse_passthrough_enable(fuse_req_t req, const struct fuse_file_info *fi) {
+  int ret = 0;
+
+  if (fi->passthrough) {
+    struct fuse_passthrough_out out;
+
+    out.unique = req->unique;
+    out.fd = fi->fd;
+    out.len = 0;
+
+    ret = ioctl(req->se->fd, FUSE_DEV_IOC_PASSTHROUGH_OPEN, &out);
+    if (ret == -1) fuse_log(FUSE_LOG_ERR, "fuse: passthrough_enable: %s\n", strerror(errno));
+  }
+
+  return ret;
 }
 
 int fuse_reply_open(fuse_req_t req, const struct fuse_file_info *f)

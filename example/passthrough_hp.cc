@@ -771,6 +771,7 @@ static void sfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
         if (fs.passthrough) {
             fi->fd = fd;
             fi->passthrough = true;
+            fuse_passthrough_enable(req, fi);
         }
         fuse_reply_create(req, &e, fi);
     }
@@ -827,6 +828,7 @@ static void sfs_open(fuse_req_t req, fuse_ino_t ino, fuse_file_info *fi) {
     if (fs.passthrough) {
         fi->fd = fd;
         fi->passthrough = true;
+        fuse_passthrough_enable(req, fi);
     }
     fuse_reply_open(req, fi);
 }
