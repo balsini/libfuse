@@ -72,10 +72,6 @@ struct fuse_file_info {
 	    seekable. */
 	unsigned int nonseekable : 1;
 
-    /** Can be filled in by open, to indicate that the file is meant to be
-        opened in passthrough mode. */
-	unsigned int passthrough : 1;
-
 	/* Indicates that flock locks for this file should be
 	   released.  If set, lock_owner shall contain a valid value.
 	   May only be set in ->release(). */
@@ -95,9 +91,6 @@ struct fuse_file_info {
 	 * open, and opendir().  Available in most other file operations on the
 	 * same file handle. */
 	uint64_t fh;
-
-	/** File descriptor associated with the lower file system's file. */
-	int32_t fd;
 
 	/** Lock owner id.  Available in locking operations and flush */
 	uint64_t lock_owner;
@@ -399,6 +392,7 @@ struct fuse_loop_config {
  * This feature is disabled by default.
  */
 #define FUSE_CAP_PASSTHROUGH            (1 << 27)
+
 /**
  * Ioctl flags
  *

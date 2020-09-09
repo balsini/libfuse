@@ -396,10 +396,6 @@ static void fill_open(struct fuse_open_out *arg,
 		arg->open_flags |= FOPEN_CACHE_DIR;
 	if (f->nonseekable)
 		arg->open_flags |= FOPEN_NONSEEKABLE;
-	if (f->passthrough) {
-		arg->open_flags |= FOPEN_PASSTHROUGH;
-		arg->fd = f->fd;
-	}
 }
 
 int fuse_reply_entry(fuse_req_t req, const struct fuse_entry_param *e)
@@ -454,21 +450,18 @@ int fuse_reply_readlink(fuse_req_t req, const char *linkname)
 	return send_reply_ok(req, linkname, strlen(linkname));
 }
 
-int fuse_passthrough_enable(fuse_req_t req, const struct fuse_file_info *fi) {
-  int ret = 0;
-
-  if (fi->passthrough) {
+int fuse_passthrough_enable(fuse_req_t req, unsigned int fd) {
     struct fuse_passthrough_out out;
+    int ret;
 
     out.unique = req->unique;
-    out.fd = fi->fd;
+    out.fd = fd;
     out.len = 0;
 
     ret = ioctl(req->se->fd, FUSE_DEV_IOC_PASSTHROUGH_OPEN, &out);
-    if (ret == -1) fuse_log(FUSE_LOG_ERR, "fuse: passthrough_enable: %s\n", strerror(errno));
-  }
+    if (ret) fuse_log(FUSE_LOG_ERR, "fuse: passthrough_enable: %s\n", strerror(errno));
 
-  return ret;
+    return ret;
 }
 
 int fuse_reply_open(fuse_req_t req, const struct fuse_file_info *f)

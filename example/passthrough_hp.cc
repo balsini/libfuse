@@ -200,7 +200,7 @@ static void sfs_init(void *userdata, fuse_conn_info *conn) {
         conn->want |= FUSE_CAP_SPLICE_WRITE;
     if (conn->capable & FUSE_CAP_SPLICE_READ && !fs.nosplice)
         conn->want |= FUSE_CAP_SPLICE_READ;
-    if (fs.passthrough && conn->capable & FUSE_CAP_PASSTHROUGH)
+    if (conn->capable & FUSE_CAP_PASSTHROUGH && fs.passthrough)
         conn->want |= FUSE_CAP_PASSTHROUGH;
 }
 
@@ -767,14 +767,18 @@ static void sfs_create(fuse_req_t req, fuse_ino_t parent, const char *name,
         if (err == ENFILE || err == EMFILE)
             cerr << "ERROR: Reached maximum number of file descriptors." << endl;
         fuse_reply_err(req, err);
-    } else {
-        if (fs.passthrough) {
-            fi->fd = fd;
-            fi->passthrough = true;
-            fuse_passthrough_enable(req, fi);
-        }
-        fuse_reply_create(req, &e, fi);
+        return;
     }
+
+    if (fs.passthrough) {
+        err = fuse_passthrough_enable(req, fd);
+        if (err) {
+            fuse_reply_err(req, err);
+            return;
+        }
+    }
+
+    fuse_reply_create(req, &e, fi);
 }
 
 
@@ -826,9 +830,11 @@ static void sfs_open(fuse_req_t req, fuse_ino_t ino, fuse_file_info *fi) {
     fi->keep_cache = (fs.timeout != 0);
     fi->fh = fd;
     if (fs.passthrough) {
-        fi->fd = fd;
-        fi->passthrough = true;
-        fuse_passthrough_enable(req, fi);
+        auto err = fuse_passthrough_enable(req, fd);
+        if (err) {
+            fuse_reply_err(req, err);
+            return;
+        }
     }
     fuse_reply_open(req, fi);
 }
