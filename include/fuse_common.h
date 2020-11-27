@@ -396,7 +396,7 @@ struct fuse_loop_config {
  *
  * This feature is disabled by default.
  */
-#define FUSE_CAP_PASSTHROUGH            (1 << 27)
+#define FUSE_CAP_PASSTHROUGH            (1 << 29)
 
 /**
  * Ioctl flags

@@ -301,7 +301,7 @@ struct fuse_file_lock {
 #define FUSE_CACHE_SYMLINKS	(1 << 23)
 #define FUSE_NO_OPENDIR_SUPPORT (1 << 24)
 #define FUSE_EXPLICIT_INVAL_DATA (1 << 25)
-#define FUSE_PASSTHROUGH	(1 << 27)
+#define FUSE_PASSTHROUGH	(1 << 29)
 
 /**
  * CUSE INIT request/reply flags
